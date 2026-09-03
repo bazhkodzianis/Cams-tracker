@@ -14,6 +14,9 @@
   --rule-soft:#dedbd3;
   --brass:#9a6d16;
   --danger:#b23225;
+  --good:#2f7d4f;
+  --warn:#c08a1e;
+  --soft-red:#c0554a;
   --field:#ffffff;
   --head:#f2f0ea;
   --note:#f4f2ec;
@@ -29,6 +32,9 @@ html[data-theme="dark"]{
   --rule-soft:#2a2e33;
   --brass:#c9a049;
   --danger:#d15646;
+  --good:#5fb37e;
+  --warn:#d9a641;
+  --soft-red:#e08379;
   --field:#24282d;
   --head:#212529;
   --note:#1f2328;
@@ -175,6 +181,17 @@ input[type=number]:focus{outline:2px solid var(--brass);outline-offset:-1px;bord
 .themerow .sizes{margin:0}
 .syncstatus{margin:10px 0 0;font-size:12.5px;color:var(--ink-soft);line-height:1.45;word-break:break-word}
 .syncstatus.bad{color:var(--red)}
+.stepper b.goal-ok,.stepper b.goal-bad,.stepper b.goal-low{border-radius:3px;padding:1px 6px}
+.stepper b.goal-ok{box-shadow:inset 0 0 0 1.5px var(--good)}
+.stepper b.goal-low{box-shadow:inset 0 0 0 1.5px var(--warn)}
+.stepper b.goal-bad{box-shadow:inset 0 0 0 1.5px var(--danger)}
+.grow input.goal-ok{border-color:var(--good);box-shadow:inset 0 0 0 1px var(--good)}
+.grow input.goal-low{border-color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn)}
+.grow input.goal-bad{border-color:var(--danger);box-shadow:inset 0 0 0 1px var(--danger)}
+.keeprow{display:flex;align-items:center;gap:5px;margin-top:5px}
+.keeprow span{font-size:11px;color:var(--ink-soft)}
+.keeprow input{flex:1;min-width:0;font:inherit;font-size:12.5px;text-align:center;padding:3px 4px;
+  border:1px solid var(--rule);border-radius:var(--radius);background:var(--field);color:var(--ink)}
 .readnote{padding:10px 12px;font-size:13px;color:var(--ink-soft);background:var(--note);border-top:1px solid var(--rule-soft)}
 
 .buy{background:var(--card);border:1px solid var(--rule);border-radius:var(--radius);padding:14px 12px}
@@ -343,7 +360,7 @@ var COLORS = [
 var SIZES = ["s","l"], GENDERS = ["m","f"], BRASS_HEX = "#b08d57";
 
 function blankLocation(name){
-  var loc = {id:"L" + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4), name:name, hidden:false, s:{}, l:{}, term:{m:0, f:0}};
+  var loc = {id:"L" + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4), name:name, hidden:false, keep:null, s:{}, l:{}, term:{m:0, f:0}};
   SIZES.forEach(function(sz){
     COLORS.forEach(function(c){ loc[sz][c.key] = {m:0, f:0}; });
   });
@@ -459,6 +476,7 @@ function apply(raw){
       });
       if(src.term) loc.term = {m:+src.term.m || 0, f:+src.term.f || 0};
       loc.hidden = ("hidden" in src) ? !!src.hidden : !!keepHidden[loc.id];
+      loc.keep = (src.keep === 0 || src.keep > 0) ? Math.floor(src.keep) : null;
       return loc;
     });
     state.locations[0].hidden = false;          /* склад скрыть нельзя */
@@ -666,13 +684,20 @@ function columnTemplate(n){
 function minRowWidth(n){
   return COL_NAME + n * dataColWidth() + COL_TOTAL + COL_GAP * (n + 1) + ROW_PAD;
 }
-function numberCell(value, onChange, label){
+function numberCell(value, onChange, label, goalFn){
   var wrap = document.createElement("div");
   var inp = document.createElement("input");
   inp.type = "number"; inp.min = "0"; inp.step = "1"; inp.inputMode = "numeric";
   inp.value = value;
+  if(goalFn){
+    inp.className = goalFn() || "";
+    goalNodes.push({el:inp, fn:goalFn});
+  }
   inp.setAttribute("aria-label", label);
-  inp.addEventListener("input", function(){ onChange(Math.max(0, Math.floor(+inp.value || 0))); });
+  inp.addEventListener("input", function(){
+    onChange(Math.max(0, Math.floor(+inp.value || 0)));
+    if(goalFn) inp.className = goalFn() || "";
+  });
   inp.addEventListener("focus", function(){ inp.select(); });
   wrap.appendChild(inp);
   return wrap;
@@ -694,7 +719,7 @@ function stepperCell(cfg){
   var minus = mk("\u2212", cfg.minusName || "Use one"),
       val = document.createElement("b");
   val.textContent = v;
-  val.className = v ? "" : "zero";
+  val.className = (v ? "" : "zero") + (cfg.goalCls ? " " + cfg.goalCls : "");
   minus.disabled = !cfg.canMinus();
   minus.addEventListener("click", function(){ cfg.minus(); afterStep(); });
   wrap.appendChild(minus); wrap.appendChild(val);
@@ -711,6 +736,21 @@ function stepperCell(cfg){
   return wrap;
 }
 function setUnit(){ return needsBrass() ? COLORS.length : 0; }
+/* цель по комплектам: у офиса её нет */
+function keepOf(loc){
+  return (state.locations[0] === loc || loc.keep == null) ? null : loc.keep;
+}
+var goalNodes = [];
+function updateGoals(){
+  goalNodes.forEach(function(n){ n.el.className = n.fn() || ""; });
+}
+function isStock(loc){ return state.locations[0] === loc; }
+function goalClass(v, keep, stock){
+  if(keep == null) return (stock && v === 0) ? "goal-bad" : "";  /* офис: красный только на нуле, ящик без цели — без подсветки */
+  if(v === 0) return "goal-bad";        /* цель есть, но пусто */
+  if(v === keep) return "goal-ok";      /* ровно столько, сколько нужно */
+  return v < keep ? "goal-low" : "";    /* больше цели: обычная рамка */
+}
 function setsIn(loc){
   var m = Infinity;
   COLORS.forEach(function(c){ m = Math.min(m, loc[state.size][c.key][state.view] || 0); });
@@ -745,10 +785,10 @@ function usageHead(loc, li){
   minus.addEventListener("click", function(){ shiftSet(loc, -1); afterStep(); });
   bar.appendChild(minus);
 
-  var n = setsIn(loc);
+  var n = setsIn(loc), keep = keepOf(loc);
   var lab = document.createElement("span");
-  lab.textContent = n + (n === 1 ? " set" : " sets");
-  lab.title = "Complete sets here";
+  lab.textContent = keep == null ? n + (n === 1 ? " set" : " sets") : n + "/" + keep;
+  lab.title = keep == null ? "Complete sets here" : "Complete sets here, target " + keep;
   bar.appendChild(lab);
 
   if(isSrc){
@@ -809,6 +849,25 @@ function locHeadCell(loc){
     if(!inp.value.trim()){ loc.name = "Location"; inp.value = loc.name; save(); }
   });
   cell.appendChild(inp);
+  if(state.locations[0] !== loc){
+    var kr = document.createElement("div");
+    kr.className = "keeprow";
+    var kl = document.createElement("span");
+    kl.textContent = "keep";
+    var ki = document.createElement("input");
+    ki.type = "number"; ki.min = "0"; ki.step = "1"; ki.inputMode = "numeric";
+    ki.placeholder = "\u2014";
+    ki.value = (loc.keep == null ? "" : loc.keep);
+    ki.setAttribute("aria-label", "Sets to keep in " + loc.name);
+    ki.addEventListener("input", function(){
+      var t = ki.value.trim();
+      loc.keep = t === "" ? null : Math.max(0, Math.floor(+t || 0));
+      updateGoals(); save();
+    });
+    ki.addEventListener("focus", function(){ ki.select(); });
+    kr.appendChild(kl); kr.appendChild(ki);
+    cell.appendChild(kr);
+  }
   if(state.locations.length > 1){
     var del = document.createElement("button");
     del.type = "button"; del.className = "del"; del.textContent = "remove";
@@ -852,6 +911,7 @@ function renderVisRow(){
   });
 }
 function renderGrid(){
+  goalNodes = [];
   var pairs = state.view === "p";
   var vis = visibleLocations();
   var cols = columnTemplate(pairs ? 2 : vis.length);
@@ -895,6 +955,7 @@ function renderGrid(){
           var atSrc = function(){ return src[state.size][c.key][state.view]; };
           row.appendChild(stepperCell({
             label:c.name + " in " + loc.name,
+            goalCls:goalClass(here(), keepOf(loc), isSrc),
             noPlus:isSrc,
             plusName:"Move one from " + src.name,
             minusName:isSrc ? "Use one straight from" : "Mark one used from",
@@ -913,7 +974,8 @@ function renderGrid(){
             loc[state.size][c.key][state.view] = v;
             state.target = null; state.checked = {};
             renderTotalsOnly(); save();
-          }, c.name + " in " + loc.name));
+          }, c.name + " in " + loc.name,
+             function(){ return goalClass(loc[state.size][c.key][state.view], keepOf(loc), isStock(loc)); }));
         }
       });
       row.appendChild(totalCell(colorTotal(state.size, c.key, state.view)));
@@ -957,8 +1019,10 @@ function renderGrid(){
         if(state.mode === "use"){
           var bsrc = state.locations[0], isBSrc = li === 0;
           var bhere = function(){ return loc.term[state.view]; };
+          var bkeep = keepOf(loc);
           brow.appendChild(stepperCell({
             label:"brass terminals in " + loc.name,
+            goalCls:goalClass(bhere(), bkeep == null ? null : bkeep * COLORS.length, isBSrc),
             noPlus:isBSrc,
             plusName:"Move one from " + bsrc.name,
             minusName:isBSrc ? "Use one straight from" : "Mark one used from",
@@ -977,7 +1041,10 @@ function renderGrid(){
             loc.term[state.view] = v;
             state.target = null; state.checked = {};
             renderTotalsOnly(); save();
-          }, "Brass terminals in " + loc.name));
+          }, "Brass terminals in " + loc.name, function(){
+             var bk = keepOf(loc);
+             return goalClass(loc.term[state.view], bk == null ? null : bk * COLORS.length, isStock(loc));
+          }));
         }
       });
       brow.appendChild(totalCell(termTotal(state.view)));
