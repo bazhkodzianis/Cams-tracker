@@ -188,9 +188,10 @@ input[type=number]:focus{outline:2px solid var(--brass);outline-offset:-1px;bord
 .grow input.goal-ok{border-color:var(--good);box-shadow:inset 0 0 0 1px var(--good)}
 .grow input.goal-low{border-color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn)}
 .grow input.goal-bad{border-color:var(--danger);box-shadow:inset 0 0 0 1px var(--danger)}
-.keeprow{display:flex;align-items:center;gap:5px;margin-top:5px}
-.keeprow span{font-size:11px;color:var(--ink-soft)}
-.keeprow input{flex:1;min-width:0;font:inherit;font-size:12.5px;text-align:center;padding:3px 4px;
+.keeprow{position:relative;display:flex;justify-content:center;align-items:center;margin-top:5px;width:100%}
+.keeprow span{position:absolute;right:calc(50% + 25px);top:50%;transform:translateY(-50%);
+  font-size:12px;line-height:1;white-space:nowrap;color:var(--ink-soft);pointer-events:none}
+.keeprow input{flex:0 0 auto;width:34px;font:inherit;font-size:12.5px;text-align:center;padding:3px 2px;
   border:1px solid var(--rule);border-radius:var(--radius);background:var(--field);color:var(--ink)}
 .readnote{padding:10px 12px;font-size:13px;color:var(--ink-soft);background:var(--note);border-top:1px solid var(--rule-soft)}
 
@@ -360,7 +361,7 @@ var COLORS = [
 var SIZES = ["s","l"], GENDERS = ["m","f"], BRASS_HEX = "#b08d57";
 
 function blankLocation(name){
-  var loc = {id:"L" + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4), name:name, hidden:false, keep:null, s:{}, l:{}, term:{m:0, f:0}};
+  var loc = {id:"L" + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4), name:name, hidden:false, keep:normKeep(null), s:{}, l:{}, term:{m:0, f:0}};
   SIZES.forEach(function(sz){
     COLORS.forEach(function(c){ loc[sz][c.key] = {m:0, f:0}; });
   });
@@ -476,7 +477,7 @@ function apply(raw){
       });
       if(src.term) loc.term = {m:+src.term.m || 0, f:+src.term.f || 0};
       loc.hidden = ("hidden" in src) ? !!src.hidden : !!keepHidden[loc.id];
-      loc.keep = (src.keep === 0 || src.keep > 0) ? Math.floor(src.keep) : null;
+      loc.keep = normKeep(src.keep);
       return loc;
     });
     state.locations[0].hidden = false;          /* склад скрыть нельзя */
@@ -738,13 +739,33 @@ function stepperCell(cfg){
 function setUnit(){ return needsBrass() ? COLORS.length : 0; }
 /* цель по комплектам: у офиса её нет */
 function keepOf(loc){
-  return (state.locations[0] === loc || loc.keep == null) ? null : loc.keep;
+  if(isStock(loc)) return null;
+  if(state.view !== "m" && state.view !== "f") return null;
+  if(!loc.keep || typeof loc.keep === "number") loc.keep = normKeep(loc.keep);
+  return loc.keep[state.size][state.view];
 }
 var goalNodes = [];
 function updateGoals(){
   goalNodes.forEach(function(n){ n.el.className = n.fn() || ""; });
 }
 function isStock(loc){ return state.locations[0] === loc; }
+/* цель отдельная для каждой пары размер x male/female */
+function oneKeep(x){ return (x === 0 || x > 0) ? Math.floor(x) : null; }
+function normKeep(v){
+  var out = {s:{m:null, f:null}, l:{m:null, f:null}};
+  if(v == null) return out;
+  if(typeof v === "number"){                       /* старый формат: одно число на всё */
+    var n = oneKeep(v);
+    out.s.m = out.s.f = out.l.m = out.l.f = n;
+    return out;
+  }
+  ["s","l"].forEach(function(sz){
+    var src = v[sz] || {};
+    out[sz].m = oneKeep(src.m);
+    out[sz].f = oneKeep(src.f);
+  });
+  return out;
+}
 function goalClass(v, keep, stock){
   if(keep == null) return (stock && v === 0) ? "goal-bad" : "";  /* офис: красный только на нуле, ящик без цели — без подсветки */
   if(v === 0) return "goal-bad";        /* цель есть, но пусто */
@@ -857,11 +878,15 @@ function locHeadCell(loc){
     var ki = document.createElement("input");
     ki.type = "number"; ki.min = "0"; ki.step = "1"; ki.inputMode = "numeric";
     ki.placeholder = "\u2014";
-    ki.value = (loc.keep == null ? "" : loc.keep);
-    ki.setAttribute("aria-label", "Sets to keep in " + loc.name);
+    var cur = keepOf(loc);
+    ki.value = (cur == null ? "" : cur);
+    var what = (state.size === "l" ? "Large" : "Small") + " " + (state.view === "f" ? "female" : "male");
+    ki.setAttribute("aria-label", "Sets of " + what + " to keep in " + loc.name);
+    ki.title = "Target for " + what + " only";
     ki.addEventListener("input", function(){
       var t = ki.value.trim();
-      loc.keep = t === "" ? null : Math.max(0, Math.floor(+t || 0));
+      if(!loc.keep || typeof loc.keep === "number") loc.keep = normKeep(loc.keep);
+      loc.keep[state.size][state.view] = t === "" ? null : Math.max(0, Math.floor(+t || 0));
       updateGoals(); save();
     });
     ki.addEventListener("focus", function(){ ki.select(); });
