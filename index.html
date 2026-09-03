@@ -150,7 +150,8 @@ input[type=number]:focus{outline:2px solid var(--brass);outline-offset:-1px;bord
 .stepper button:active{background:var(--paper)}
 .stepper button:disabled{color:var(--rule);cursor:default}
 .stepper button:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
-.stepper b{flex:1;min-width:0;text-align:center;font-variant-numeric:tabular-nums;font-size:17px;font-weight:650}
+.stepper b{flex:1;min-width:0;position:relative;height:36px;display:flex;align-items:center;justify-content:center;
+  font-variant-numeric:tabular-nums;font-size:17px;font-weight:650}
 .stepper b.zero{color:var(--rule);font-weight:400}
 .stepper .spacer{width:30px;flex:0 0 auto}
 .locname-static{font-size:12.5px;color:var(--ink-soft);text-align:center;padding-bottom:8px;
@@ -187,10 +188,11 @@ input[type=number]:focus{outline:2px solid var(--brass);outline-offset:-1px;bord
 .themerow .sizes{margin:0}
 .syncstatus{margin:10px 0 0;font-size:12.5px;color:var(--ink-soft);line-height:1.45;word-break:break-word}
 .syncstatus.bad{color:var(--red)}
-.stepper b.goal-ok,.stepper b.goal-bad,.stepper b.goal-low{border-radius:3px;padding:1px 6px}
-.stepper b.goal-ok{box-shadow:inset 0 0 0 1.5px var(--good)}
-.stepper b.goal-low{box-shadow:inset 0 0 0 1.5px var(--warn)}
-.stepper b.goal-bad{box-shadow:inset 0 0 0 1.5px var(--danger)}
+.stepper b.goal-ok::before,.stepper b.goal-low::before,.stepper b.goal-bad::before{
+  content:"";position:absolute;top:0;bottom:0;left:6px;right:6px;border-radius:var(--radius);pointer-events:none}
+.stepper b.goal-ok::before{box-shadow:inset 0 0 0 1.5px var(--good)}
+.stepper b.goal-low::before{box-shadow:inset 0 0 0 1.5px var(--warn)}
+.stepper b.goal-bad::before{box-shadow:inset 0 0 0 1.5px var(--danger)}
 .grow input.goal-ok{border-color:var(--good);box-shadow:inset 0 0 0 1px var(--good)}
 .grow input.goal-low{border-color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn)}
 .grow input.goal-bad{border-color:var(--danger);box-shadow:inset 0 0 0 1px var(--danger)}
