@@ -42,6 +42,7 @@ h1{font-size:19px;font-weight:650;letter-spacing:-.01em;margin:0 0 2px}
 .sizes button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 .topbar{display:flex;align-items:center;gap:12px;margin-bottom:2px}
 .topbar h1{flex:1;min-width:0}
+.switches{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:0 0 auto}
 .modetoggle{display:flex;align-items:center;gap:8px;flex:0 0 auto;appearance:none;background:transparent;
   border:0;padding:4px 0;font:inherit;font-size:12.5px;color:var(--ink-soft);cursor:pointer;white-space:nowrap}
 .modetoggle .track{width:38px;height:22px;flex:0 0 auto;border-radius:11px;background:var(--rule);
@@ -208,9 +209,14 @@ footer button{appearance:none;background:transparent;border:0;font:inherit;font-
 
 <header class="topbar">
   <h1>Cam sets</h1>
-  <button type="button" class="modetoggle" id="modetoggle" role="switch" aria-checked="false">
-    Inventory mode<span class="track"><span class="knob"></span></span>
-  </button>
+  <div class="switches">
+    <button type="button" class="modetoggle" id="modetoggle" role="switch" aria-checked="false">
+      Inventory mode<span class="track"><span class="knob"></span></span>
+    </button>
+    <button type="button" class="modetoggle" id="settingstoggle" role="switch" aria-checked="false" hidden>
+      Settings<span class="track"><span class="knob"></span></span>
+    </button>
+  </div>
 </header>
 <p class="sub">A set is one cam of each of the five colors. Sizes count separately. Small cams come assembled; large ones use a separate boot and brass terminal.</p>
 
@@ -1051,6 +1057,8 @@ function renderAll(){ syncControls(); renderVisRow(); renderGrid(); renderHero()
 var tabs = {m:document.getElementById("tab-m"), f:document.getElementById("tab-f"), p:document.getElementById("tab-p")};
 var sizeBtns = {s:document.getElementById("size-s"), l:document.getElementById("size-l")};
 var modeToggle = document.getElementById("modetoggle");
+var setToggle = document.getElementById("settingstoggle");
+var showSettings = false;   /* сбрасывается при каждом запуске */
 function syncControls(){
   Object.keys(tabs).forEach(function(k){ tabs[k].setAttribute("aria-selected", state.view === k ? "true" : "false"); });
   Object.keys(sizeBtns).forEach(function(k){ sizeBtns[k].setAttribute("aria-pressed", state.size === k ? "true" : "false"); });
@@ -1061,9 +1069,17 @@ function syncControls(){
     : "Counts by storage location";
   document.getElementById("clear").hidden = state.mode === "use";
   document.getElementById("buypanel").hidden = state.mode === "use";
+  setToggle.hidden = state.mode === "use";
+  setToggle.setAttribute("aria-checked", showSettings ? "true" : "false");
+  document.getElementById("syncpanel").hidden = !(state.mode === "inv" && showSettings);
 }
+setToggle.addEventListener("click", function(){
+  showSettings = !showSettings;
+  syncControls();
+});
 modeToggle.addEventListener("click", function(){
   state.mode = state.mode === "inv" ? "use" : "inv";
+  if(state.mode === "use") showSettings = false;
   armed = null;
   renderAll(); save();
 });
