@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cam sets</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#e9e7e1">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cam sets">
+<style>
+:root{
+  --paper:#e9e7e1;
+  --card:#fbfaf7;
+  --ink:#1e2126;
+  --ink-soft:#6a6b68;
+  --rule:#c9c6bd;
+  --rule-soft:#dedbd3;
+  --brass:#9a6d16;
+  --danger:#b23225;
+  --radius:3px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:16px;line-height:1.45;-webkit-text-size-adjust:100%;
+  padding:14px 12px 60px;max-width:640px;margin:0 auto;
+}
+h1{font-size:19px;font-weight:650;letter-spacing:-.01em;margin:0 0 2px}
+.sub{color:var(--ink-soft);font-size:13.5px;margin:0 0 16px}
+.num{font-variant-numeric:tabular-nums}
+
+.sizes{display:flex;gap:8px;margin-bottom:8px}
+.sizes button{flex:1;appearance:none;background:var(--card);border:1px solid var(--rule);border-radius:var(--radius);
+  padding:11px 6px;font:inherit;font-size:14.5px;color:var(--ink-soft);cursor:pointer}
+.sizes button[aria-pressed="true"]{background:#fff;border-color:var(--brass);box-shadow:inset 0 0 0 1px var(--brass);color:var(--ink);font-weight:600}
+.sizes button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:2px}
+.topbar h1{flex:1;min-width:0}
+.modetoggle{display:flex;align-items:center;gap:8px;flex:0 0 auto;appearance:none;background:transparent;
+  border:0;padding:4px 0;font:inherit;font-size:12.5px;color:var(--ink-soft);cursor:pointer;white-space:nowrap}
+.modetoggle .track{width:38px;height:22px;flex:0 0 auto;border-radius:11px;background:var(--rule);
+  position:relative;transition:background .15s ease}
+.modetoggle .knob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.28);transition:transform .15s ease}
+.modetoggle[aria-checked="true"]{color:var(--ink);font-weight:600}
+.modetoggle[aria-checked="true"] .track{background:var(--brass)}
+.modetoggle[aria-checked="true"] .knob{transform:translateX(16px)}
+.modetoggle:focus-visible{outline:2px solid var(--brass);outline-offset:3px;border-radius:var(--radius)}
+
+.tabs{display:flex;border:1px solid var(--rule);border-radius:var(--radius);overflow:hidden;margin-bottom:14px;background:var(--card)}
+.tabs button{flex:1;appearance:none;border:0;background:transparent;padding:11px 6px;font:inherit;font-size:14.5px;
+  color:var(--ink-soft);cursor:pointer;border-right:1px solid var(--rule-soft)}
+.tabs button:last-child{border-right:0}
+.tabs button[aria-selected="true"]{background:var(--ink);color:#fbfaf7;font-weight:600}
+.tabs button:focus-visible{outline:2px solid var(--brass);outline-offset:-3px}
+
+.hero{background:var(--card);border:1px solid var(--rule);border-radius:var(--radius);padding:16px 14px 12px;margin-bottom:14px}
+.count{display:flex;align-items:baseline;gap:10px;margin-bottom:2px}
+.count b{font-size:52px;font-weight:700;line-height:.9;letter-spacing:-.03em}
+.count span{font-size:15px;color:var(--ink-soft)}
+.limit{font-size:13.5px;color:var(--ink-soft);margin:6px 0 16px;min-height:19px}
+.limit em{font-style:normal;color:var(--ink);font-weight:600}
+.chart{position:relative;height:150px;display:flex;align-items:flex-end;gap:8px;padding-top:14px}
+.col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%}
+.bar{width:100%;border-radius:2px 2px 0 0;min-height:2px;transition:height .18s ease}
+.bar.surplus{opacity:.32}
+.bar.core{border-radius:0}
+.col.empty .bar{background:transparent!important;border:1px dashed var(--rule)}
+.setline{position:absolute;left:0;right:0;border-top:2px dashed var(--ink);pointer-events:none;transition:bottom .18s ease}
+.setline b{position:absolute;right:0;top:-19px;font-size:11.5px;background:var(--card);padding:0 4px;font-weight:600}
+.legend{display:flex;gap:8px;margin-top:7px}
+.legend div{flex:1;text-align:center;font-size:11.5px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.loctools{display:flex;align-items:center;gap:10px;margin:0 0 7px}
+.loctools span{font-size:13.5px;color:var(--ink-soft)}
+.loctools button{margin-left:auto;appearance:none;background:var(--card);border:1px solid var(--rule);border-radius:var(--radius);
+  padding:7px 12px;font:inherit;font-size:13.5px;color:var(--ink);cursor:pointer}
+.loctools button:hover{border-color:var(--ink)}
+
+.gridwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;background:var(--card);border:1px solid var(--rule);
+  border-radius:var(--radius);margin-bottom:14px}
+.grid{min-width:100%}
+.grow{display:grid;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--rule-soft)}
+.grow:last-child{border-bottom:0}
+.ghead{background:#f2f0ea;padding-top:6px;padding-bottom:6px;font-size:12.5px;color:var(--ink-soft);align-items:end}
+.headlabel{font-size:12.5px;color:var(--ink-soft);padding-bottom:8px}
+.loccell{display:flex;flex-direction:column;gap:3px}
+.loccell input{width:100%;font:inherit;font-size:12.5px;text-align:center;padding:5px 2px;border:1px solid transparent;
+  border-radius:var(--radius);background:transparent;color:var(--ink-soft);min-width:0}
+.loccell input:hover{border-color:var(--rule)}
+.loccell input:focus{outline:2px solid var(--brass);outline-offset:-1px;background:#fff;color:var(--ink)}
+.del{appearance:none;background:transparent;border:0;font:inherit;font-size:11px;color:var(--ink-soft);
+  cursor:pointer;padding:1px 2px;opacity:.65}
+.del:hover{opacity:1;color:var(--danger)}
+.del.arm{color:#fff;background:var(--danger);border-radius:2px;opacity:1;font-weight:600}
+.totcell{text-align:center;font-size:12.5px;color:var(--ink-soft);padding-bottom:8px}
+.name{display:flex;align-items:center;gap:9px;font-size:15px;min-width:0}
+.name span.t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{width:19px;height:19px;border-radius:50%;flex:0 0 auto;border:1px solid rgba(0,0,0,.22)}
+.brasshint{padding:9px 12px;font-size:13px;color:var(--ink-soft);border-top:1px solid var(--rule-soft);background:#f4f2ec}
+.sum-val{text-align:center;font-variant-numeric:tabular-nums;font-size:17px;font-weight:650}
+.sum-val.zero{color:var(--rule);font-weight:400}
+input[type=number]{width:100%;font:inherit;font-size:17px;font-variant-numeric:tabular-nums;text-align:center;
+  padding:8px 2px;border:1px solid var(--rule);border-radius:var(--radius);background:#fff;color:var(--ink);
+  -moz-appearance:textfield;min-width:0}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]:focus{outline:2px solid var(--brass);outline-offset:-1px;border-color:var(--brass)}
+.stepper{display:flex;align-items:center;gap:1px;min-width:0}
+.stepper button{width:30px;height:36px;flex:0 0 auto;appearance:none;background:#fff;border:1px solid var(--rule);
+  border-radius:var(--radius);font:inherit;font-size:18px;line-height:1;color:var(--ink);cursor:pointer;padding:0}
+.stepper button:active{background:var(--paper)}
+.stepper button:disabled{color:var(--rule);cursor:default}
+.stepper button:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
+.stepper b{flex:1;min-width:0;text-align:center;font-variant-numeric:tabular-nums;font-size:17px;font-weight:650}
+.stepper b.zero{color:var(--rule);font-weight:400}
+.stepper .spacer{width:30px;flex:0 0 auto}
+.locname-static{font-size:12.5px;color:var(--ink-soft);text-align:center;padding-bottom:8px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.loccell.usage .locname-static{padding-bottom:3px}
+.setstep{display:flex;align-items:center;gap:2px;justify-content:center;padding-bottom:5px}
+.setstep button{width:26px;height:26px;flex:0 0 auto;appearance:none;background:#fff;border:1px solid var(--rule);
+  border-radius:var(--radius);font:inherit;font-size:15px;line-height:1;color:var(--ink);cursor:pointer;padding:0}
+.setstep button:active{background:var(--paper)}
+.setstep button:disabled{color:var(--rule);cursor:default}
+.setstep button:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
+.setstep span{flex:1;text-align:center;font-size:11px;color:var(--ink-soft);letter-spacing:.02em}
+.setstep .spacer{flex:0 0 auto;width:26px}
+.visrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 8px}
+.visrow .lbl{font-size:12.5px;color:var(--ink-soft)}
+.visrow button{appearance:none;background:var(--card);border:1px solid var(--rule);border-radius:999px;
+  font:inherit;font-size:12.5px;padding:4px 11px;color:var(--ink);cursor:pointer}
+.visrow button[aria-pressed="false"]{background:transparent;color:var(--ink-soft);opacity:.6;text-decoration:line-through}
+.visrow button:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
+.readnote{padding:10px 12px;font-size:13px;color:var(--ink-soft);background:#f4f2ec;border-top:1px solid var(--rule-soft)}
+
+.buy{background:var(--card);border:1px solid var(--rule);border-radius:var(--radius);padding:14px 12px}
+.buy h2{font-size:15px;font-weight:650;margin:0 0 3px}
+.buyhint{font-size:13.5px;color:var(--ink-soft);margin:0 0 12px}
+.target{display:flex;align-items:center;gap:9px;margin-bottom:12px;flex-wrap:wrap}
+.target label{font-size:14px}
+.target input{width:84px}
+.target button{appearance:none;background:transparent;border:1px solid var(--rule);border-radius:var(--radius);
+  padding:7px 10px;font:inherit;font-size:13.5px;color:var(--ink-soft);cursor:pointer}
+.target button:hover{color:var(--ink);border-color:var(--ink)}
+ul.list{list-style:none;margin:0;padding:0}
+ul.list li{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--rule-soft);font-size:15px}
+ul.list li label{display:flex;align-items:center;gap:10px;width:100%;cursor:pointer}
+ul.list input[type=checkbox]{width:21px;height:21px;accent-color:var(--brass);flex:0 0 auto}
+ul.list .qty{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:650;font-size:16px}
+ul.list li.done label{color:var(--ink-soft);text-decoration:line-through}
+.total{margin-top:12px;padding-top:11px;border-top:2px solid var(--ink);display:flex;font-size:14.5px}
+.total span:last-child{margin-left:auto;font-weight:650;font-variant-numeric:tabular-nums}
+.empty-note{font-size:14px;color:var(--ink-soft);padding:8px 0 2px}
+.orderfor{display:flex;align-items:center;gap:9px;margin:14px 0 12px;flex-wrap:wrap}
+.orderfor label{font-size:14px}
+.orderfor input{flex:1;min-width:150px;font:inherit;font-size:15px;padding:8px 9px;border:1px solid var(--rule);
+  border-radius:var(--radius);background:#fff;color:var(--ink)}
+.pdf{appearance:none;width:100%;background:var(--ink);color:#fbfaf7;border:0;border-radius:var(--radius);
+  padding:13px;font:inherit;font-size:15px;font-weight:600;cursor:pointer}
+.pdf:disabled{background:var(--rule);color:#fff;cursor:default}
+.pdfhint{font-size:12.5px;color:var(--ink-soft);text-align:center;margin:7px 0 0}
+footer{margin-top:18px;text-align:center}
+footer button{appearance:none;background:transparent;border:0;font:inherit;font-size:13px;color:var(--ink-soft);
+  text-decoration:underline;cursor:pointer;padding:8px}
+
+#report{display:none}
+@media print{
+  @page{margin:16mm}
+  body{background:#fff;padding:0;max-width:none}
+  body > *{display:none!important}
+  #report{display:block!important;color:#000;font-size:12pt}
+  #report h2{font-size:17pt;margin:0 0 2px;font-weight:700}
+  #report .meta{font-size:10.5pt;color:#333;margin:0 0 20px;line-height:1.6}
+  #report table{width:100%;border-collapse:collapse;font-size:11pt}
+  #report th,#report td{border-bottom:1px solid #999;padding:7px 4px;text-align:left}
+  #report th{border-bottom:2px solid #000;font-weight:600}
+  #report td.n,#report th.n{text-align:right;font-variant-numeric:tabular-nums}
+  #report tr.sum td{border-bottom:0;border-top:2px solid #000;font-weight:700}
+  #report .sw{font-size:13pt;margin-right:7px;line-height:1}
+  #report .cap{font-size:9.5pt;color:#444;margin:5px 0 26px}
+  #report .grand{font-size:12pt;font-weight:700;margin:6px 0 0;padding-top:9px;border-top:3px double #000}
+  #report,#report *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <h1>Cam sets</h1>
+  <button type="button" class="modetoggle" id="modetoggle" role="switch" aria-checked="false">
+    Inventory mode<span class="track"><span class="knob"></span></span>
+  </button>
+</header>
+<p class="sub">A set is one cam of each of the five colors. Sizes count separately. Small cams come assembled; large ones use a separate boot and brass terminal.</p>
+
+<div class="sizes" role="group" aria-label="Cam size">
+  <button type="button" id="size-l" aria-pressed="false">Large</button>
+  <button type="button" id="size-s" aria-pressed="true">Small</button>
+</div>
+
+<div class="tabs" role="tablist">
+  <button role="tab" id="tab-m" aria-selected="true">Male</button>
+  <button role="tab" id="tab-f" aria-selected="false">Female</button>
+  <button role="tab" id="tab-p" aria-selected="false">M+F pairs</button>
+</div>
+
+<section class="hero">
+  <div class="count"><b class="num" id="sets">0</b><span id="setsWord">sets</span></div>
+  <div class="limit" id="limit"></div>
+  <div class="chart" id="chart">
+    <div class="setline" id="setline" style="bottom:0"><b class="num" id="setlineLabel">0</b></div>
+  </div>
+  <div class="legend" id="legend"></div>
+</section>
+
+<div class="loctools">
+  <span id="loclabel">Counts by storage location</span>
+  <button type="button" id="addloc">+ Add location</button>
+</div>
+
+<div class="visrow" id="visrow" hidden></div>
+
+<div class="gridwrap"><div class="grid" id="grid"></div></div>
+<div class="gridwrap" id="brasswrap" hidden><div class="grid" id="brass"></div></div>
+
+<section class="buy" id="buypanel">
+  <h2>What to order</h2>
+  <p class="buyhint" id="buyhint"></p>
+  <div class="target">
+    <label for="target">Build sets:</label>
+    <input type="number" id="target" min="0" step="1" inputmode="numeric">
+    <button type="button" id="reset">No leftovers</button>
+  </div>
+  <ul class="list" id="buylist"></ul>
+  <div class="total" id="total" hidden><span>To order</span><span id="totalQty">0</span></div>
+  <div class="orderfor">
+    <label for="orderfor">Order for:</label>
+    <input type="text" id="orderfor" placeholder="name or job — optional">
+  </div>
+  <button type="button" class="pdf" id="pdf">Save as PDF</button>
+  <p class="pdfhint">The report covers every size and type you entered counts for. A print dialog opens — choose Save as PDF.</p>
+</section>
+
+<footer><button type="button" id="clear">Clear counts for this size</button></footer>
+
+<section id="report"></section>
+
+<script>
+(function(){
+"use strict";
+
+var COLORS = [
+  {key:"green", name:"Green", hex:"#1f9d55"},
+  {key:"white", name:"White", hex:"#f8f7f3"},
+  {key:"black", name:"Black", hex:"#23262b"},
+  {key:"red",   name:"Red",   hex:"#cf3a2c"},
+  {key:"blue",  name:"Blue",  hex:"#2463b4"}
+];
+var SIZES = ["s","l"], GENDERS = ["m","f"], BRASS_HEX = "#b08d57";
+
+function blankLocation(name){
+  var loc = {id:"L" + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4), name:name, hidden:false, s:{}, l:{}, term:{m:0, f:0}};
+  SIZES.forEach(function(sz){
+    COLORS.forEach(function(c){ loc[sz][c.key] = {m:0, f:0}; });
+  });
+  return loc;
+}
+
+var state = {
+  mode:"use", size:"s", view:"m", target:null, checked:{},
+  locations:[blankLocation("Office"), blankLocation("Repair box")]
+};
+
+/* ---------- totals ---------- */
+/* скрытые локации не входят ни в Total, ни в комплекты, ни в заказ */
+function visibleLocations(){
+  return state.locations.filter(function(loc, i){ return i === 0 || !loc.hidden; });
+}
+function hiddenLocations(){
+  return state.locations.filter(function(loc, i){ return i > 0 && loc.hidden; });
+}
+function colorTotal(sz, key, g){
+  var n = 0;
+  visibleLocations().forEach(function(loc){ n += loc[sz][key][g] || 0; });
+  return n;
+}
+function termTotal(g){
+  var n = 0;
+  visibleLocations().forEach(function(loc){ n += loc.term[g] || 0; });
+  return n;
+}
+function amount(c){
+  if(state.view === "p") return Math.min(colorTotal(state.size, c.key, "m"), colorTotal(state.size, c.key, "f"));
+  return colorTotal(state.size, c.key, state.view);
+}
+function all(){ return COLORS.map(amount); }
+function termStock(){
+  if(state.view === "p") return Math.min(termTotal("m"), termTotal("f"));
+  return termTotal(state.view);
+}
+function needsBrass(){ return state.size === "l"; }
+function termSets(){ return needsBrass() ? Math.floor(termStock() / COLORS.length) : Infinity; }
+function bootSets(){ return Math.min.apply(null, all()); }
+function sets(){ return Math.min(bootSets(), termSets()); }
+function plural(n, one, many){ return Math.abs(n) === 1 ? one : many; }
+function unitLabel(){ return state.view === "p" ? "pairs" : (state.view === "m" ? "male" : "female"); }
+
+/* ---------- storage ---------- */
+var KEY = "cam-sets-v4";
+function snapshot(){
+  return JSON.stringify({
+    v:5, mode:state.mode, locations:state.locations, size:state.size, view:state.view, target:state.target,
+    orderFor:(document.getElementById("orderfor") || {}).value || ""
+  });
+}
+function save(){
+  var data = snapshot();
+  try{ if(window.storage && window.storage.set){ window.storage.set(KEY, data); return; } }catch(e){}
+  try{ localStorage.setItem(KEY, data); }catch(e){}
+}
+function apply(raw){
+  var d;
+  try{ d = JSON.parse(raw); }catch(e){ return; }
+  if(!d) return;
+  if(d.locations && d.locations.length){
+    state.locations = d.locations.map(function(src){
+      var loc = blankLocation(src.name || "Location");
+      if(src.id) loc.id = src.id;
+      SIZES.forEach(function(sz){
+        COLORS.forEach(function(c){
+          var v = src[sz] && src[sz][c.key];
+          if(v) loc[sz][c.key] = {m:+v.m || 0, f:+v.f || 0};
+        });
+      });
+      if(src.term) loc.term = {m:+src.term.m || 0, f:+src.term.f || 0};
+      loc.hidden = !!src.hidden;
+      return loc;
+    });
+    state.locations[0].hidden = false;          /* склад скрыть нельзя */
+  }else if(d.counts){                       /* миграция со старой одноместной схемы */
+    var loc = state.locations[0], old = d.v >= 2 ? d.counts : {s:d.counts, l:{}};
+    SIZES.forEach(function(sz){
+      if(!old[sz]) return;
+      COLORS.forEach(function(c){
+        var v = old[sz][c.key];
+        if(v) loc[sz][c.key] = {m:+v.m || 0, f:+v.f || 0};
+      });
+    });
+    if(d.terminals) loc.term = {m:+d.terminals.m || 0, f:+d.terminals.f || 0};
+  }
+  if(d.mode) state.mode = d.mode;
+  if(d.size) state.size = d.size;
+  if(d.view) state.view = d.view;
+  if(typeof d.target === "number") state.target = d.target;
+  if(d.orderFor) document.getElementById("orderfor").value = d.orderFor;
+  renderAll();
+}
+function load(){
+  try{
+    if(window.storage && window.storage.get){
+      window.storage.get(KEY).then(function(r){ if(r && r.value) apply(r.value); }).catch(function(){});
+      return;
+    }
+  }catch(e){}
+  try{ var v = localStorage.getItem(KEY); if(v) apply(v); }catch(e){}
+}
+
+/* ---------- grid ---------- */
+var grid = document.getElementById("grid"),
+    brass = document.getElementById("brass"),
+    brassWrap = document.getElementById("brasswrap");
+var armed = null, armTimer = null;
+
+var COL_NAME = 96, COL_TOTAL = 56, COL_GAP = 8, ROW_PAD = 24;
+function dataColWidth(){
+  return state.mode === "use" && state.view !== "p" ? 104 : 72;
+}
+function columnTemplate(n){
+  return "minmax(" + COL_NAME + "px,1.1fr) repeat(" + n + ", minmax(" + dataColWidth() +
+         "px,1fr)) minmax(" + COL_TOTAL + "px,.6fr)";
+}
+/* ширина строки не должна быть уже суммы колонок, иначе фон шапки обрывается при прокрутке */
+function minRowWidth(n){
+  return COL_NAME + n * dataColWidth() + COL_TOTAL + COL_GAP * (n + 1) + ROW_PAD;
+}
+function numberCell(value, onChange, label){
+  var wrap = document.createElement("div");
+  var inp = document.createElement("input");
+  inp.type = "number"; inp.min = "0"; inp.step = "1"; inp.inputMode = "numeric";
+  inp.value = value;
+  inp.setAttribute("aria-label", label);
+  inp.addEventListener("input", function(){ onChange(Math.max(0, Math.floor(+inp.value || 0))); });
+  inp.addEventListener("focus", function(){ inp.select(); });
+  wrap.appendChild(inp);
+  return wrap;
+}
+function afterStep(){
+  state.target = null; state.checked = {};
+  renderAll(); save();
+}
+function stepperCell(cfg){
+  var wrap = document.createElement("div");
+  wrap.className = "stepper";
+  function mk(sym, name){
+    var b = document.createElement("button");
+    b.type = "button"; b.textContent = sym;
+    b.setAttribute("aria-label", name + " " + cfg.label);
+    return b;
+  }
+  var v = cfg.get();
+  var minus = mk("\u2212", cfg.minusName || "Use one"),
+      val = document.createElement("b");
+  val.textContent = v;
+  val.className = v ? "" : "zero";
+  minus.disabled = !cfg.canMinus();
+  minus.addEventListener("click", function(){ cfg.minus(); afterStep(); });
+  wrap.appendChild(minus); wrap.appendChild(val);
+  if(cfg.noPlus){
+    var gap = document.createElement("span");
+    gap.className = "spacer";
+    wrap.appendChild(gap);
+  }else{
+    var plus = mk("+", cfg.plusName || "Add one");
+    plus.disabled = !cfg.canPlus();
+    plus.addEventListener("click", function(){ cfg.plus(); afterStep(); });
+    wrap.appendChild(plus);
+  }
+  return wrap;
+}
+function setUnit(){ return needsBrass() ? COLORS.length : 0; }
+function hasWholeSet(loc){
+  var ok = COLORS.every(function(c){ return loc[state.size][c.key][state.view] > 0; });
+  return ok && (!needsBrass() || loc.term[state.view] >= setUnit());
+}
+function shiftSet(loc, d){
+  COLORS.forEach(function(c){ loc[state.size][c.key][state.view] += d; });
+  if(needsBrass()) loc.term[state.view] += d * setUnit();
+}
+function usageHead(loc, li){
+  var cell = document.createElement("div");
+  cell.className = "loccell usage";
+  cell.appendChild(staticHead(li === 0 ? loc.name + " \u00b7 stock" : loc.name));
+
+  var src = state.locations[0], isSrc = li === 0;
+  var bar = document.createElement("div");
+  bar.className = "setstep";
+
+  function mk(sym, name){
+    var b = document.createElement("button");
+    b.type = "button"; b.textContent = sym;
+    b.setAttribute("aria-label", name);
+    return b;
+  }
+  var minus = mk("\u2212", "Use a whole set from " + loc.name);
+  minus.disabled = !hasWholeSet(loc);
+  minus.addEventListener("click", function(){ shiftSet(loc, -1); afterStep(); });
+  bar.appendChild(minus);
+
+  var lab = document.createElement("span");
+  lab.textContent = "set";
+  bar.appendChild(lab);
+
+  if(isSrc){
+    var gap = document.createElement("span");
+    gap.className = "spacer";
+    bar.appendChild(gap);
+  }else{
+    var plus = mk("+", "Move a whole set from " + src.name + " to " + loc.name);
+    plus.disabled = !hasWholeSet(src);
+    plus.addEventListener("click", function(){ shiftSet(src, -1); shiftSet(loc, 1); afterStep(); });
+    bar.appendChild(plus);
+  }
+
+  cell.appendChild(bar);
+  return cell;
+}
+function staticHead(text){
+  var d = document.createElement("div");
+  d.className = "locname-static"; d.textContent = text;
+  return d;
+}
+function totalCell(n){
+  var d = document.createElement("div");
+  d.className = "sum-val" + (n ? "" : " zero");
+  d.textContent = n;
+  return d;
+}
+function headRow(label, cols){
+  var row = document.createElement("div");
+  row.className = "grow ghead";
+  row.style.gridTemplateColumns = cols;
+  var l = document.createElement("div");
+  l.className = "headlabel"; l.textContent = label;
+  row.appendChild(l);
+  return row;
+}
+function locHeadCell(loc){
+  var cell = document.createElement("div");
+  cell.className = "loccell";
+  var inp = document.createElement("input");
+  inp.type = "text"; inp.value = loc.name;
+  inp.setAttribute("aria-label", "Location name");
+  inp.addEventListener("input", function(){ loc.name = inp.value; save(); });
+  inp.addEventListener("blur", function(){
+    if(!inp.value.trim()){ loc.name = "Location"; inp.value = loc.name; save(); }
+  });
+  cell.appendChild(inp);
+  if(state.locations.length > 1){
+    var del = document.createElement("button");
+    del.type = "button"; del.className = "del"; del.textContent = "remove";
+    del.addEventListener("click", function(){
+      if(armed === loc.id){
+        state.locations = state.locations.filter(function(l){ return l.id !== loc.id; });
+        armed = null; state.target = null; state.checked = {};
+        renderAll(); save();
+        return;
+      }
+      armed = loc.id;
+      renderGrid();
+      clearTimeout(armTimer);
+      armTimer = setTimeout(function(){ armed = null; renderGrid(); }, 3500);
+    });
+    if(armed === loc.id){ del.classList.add("arm"); del.textContent = "tap to delete"; }
+    cell.appendChild(del);
+  }
+  return cell;
+}
+
+function renderVisRow(){
+  var row = document.getElementById("visrow");
+  row.innerHTML = "";
+  var extra = state.locations.slice(1);
+  row.hidden = extra.length === 0;
+  if(row.hidden) return;
+  var lbl = document.createElement("span");
+  lbl.className = "lbl"; lbl.textContent = "Show";
+  row.appendChild(lbl);
+  extra.forEach(function(loc){
+    var b = document.createElement("button");
+    b.type = "button"; b.textContent = loc.name;
+    b.setAttribute("aria-pressed", loc.hidden ? "false" : "true");
+    b.setAttribute("aria-label", (loc.hidden ? "Show " : "Hide ") + loc.name + " column");
+    b.addEventListener("click", function(){
+      loc.hidden = !loc.hidden; armed = null;
+      renderGrid(); renderVisRow(); save();
+    });
+    row.appendChild(b);
+  });
+}
+function renderGrid(){
+  var pairs = state.view === "p";
+  var vis = visibleLocations();
+  var cols = columnTemplate(pairs ? 2 : vis.length);
+  grid.innerHTML = "";
+  grid.style.minWidth = minRowWidth(pairs ? 2 : vis.length) + "px";
+
+  var head = headRow(needsBrass() ? "Colored boot" : "Color", cols);
+  if(pairs){
+    ["Male total", "Female total"].forEach(function(t){
+      var d = document.createElement("div"); d.className = "totcell"; d.textContent = t; head.appendChild(d);
+    });
+  }else{
+    vis.forEach(function(loc, li){
+      head.appendChild(state.mode === "use" ? usageHead(loc, li) : locHeadCell(loc));
+    });
+  }
+  var tot = document.createElement("div");
+  tot.className = "totcell"; tot.textContent = pairs ? "Pairs" : "Total";
+  head.appendChild(tot);
+  grid.appendChild(head);
+
+  COLORS.forEach(function(c){
+    var row = document.createElement("div");
+    row.className = "grow";
+    row.style.gridTemplateColumns = cols;
+    var nm = document.createElement("div");
+    nm.className = "name";
+    nm.innerHTML = '<span class="chip" style="background:' + c.hex + '"></span>';
+    var t = document.createElement("span"); t.className = "t"; t.textContent = c.name;
+    nm.appendChild(t);
+    row.appendChild(nm);
+
+    if(pairs){
+      GENDERS.forEach(function(g){ row.appendChild(totalCell(colorTotal(state.size, c.key, g))); });
+      row.appendChild(totalCell(Math.min(colorTotal(state.size, c.key, "m"), colorTotal(state.size, c.key, "f"))));
+    }else{
+      vis.forEach(function(loc, li){
+        if(state.mode === "use"){
+          var src = state.locations[0], isSrc = li === 0;
+          var here = function(){ return loc[state.size][c.key][state.view]; };
+          var atSrc = function(){ return src[state.size][c.key][state.view]; };
+          row.appendChild(stepperCell({
+            label:c.name + " in " + loc.name,
+            noPlus:isSrc,
+            plusName:"Move one from " + src.name,
+            minusName:isSrc ? "Use one straight from" : "Mark one used from",
+            get:here,
+            canPlus:function(){ return !isSrc && atSrc() > 0; },
+            plus:function(){
+              if(isSrc) return;
+              src[state.size][c.key][state.view] -= 1;
+              loc[state.size][c.key][state.view] += 1;
+            },
+            canMinus:function(){ return here() > 0; },
+            minus:function(){ loc[state.size][c.key][state.view] -= 1; }
+          }));
+        }else{
+          row.appendChild(numberCell(loc[state.size][c.key][state.view], function(v){
+            loc[state.size][c.key][state.view] = v;
+            state.target = null; state.checked = {};
+            renderTotalsOnly(); save();
+          }, c.name + " in " + loc.name));
+        }
+      });
+      row.appendChild(totalCell(colorTotal(state.size, c.key, state.view)));
+    }
+    grid.appendChild(row);
+  });
+
+  brassWrap.hidden = !needsBrass();
+  if(needsBrass()){
+    brass.innerHTML = "";
+    brass.style.minWidth = grid.style.minWidth;
+    var bhead = headRow("Brass terminals", cols);
+    if(pairs){
+      ["Male total", "Female total"].forEach(function(t2){
+        var d = document.createElement("div"); d.className = "totcell"; d.textContent = t2; bhead.appendChild(d);
+      });
+    }else{
+      vis.forEach(function(loc){
+        var d = document.createElement("div"); d.className = "totcell"; d.textContent = loc.name; bhead.appendChild(d);
+      });
+    }
+    var bt = document.createElement("div"); bt.className = "totcell"; bt.textContent = "Total";
+    bhead.appendChild(bt);
+    brass.appendChild(bhead);
+
+    var brow = document.createElement("div");
+    brow.className = "grow";
+    brow.style.gridTemplateColumns = cols;
+    var bn = document.createElement("div");
+    bn.className = "name";
+    bn.innerHTML = '<span class="chip" style="background:' + BRASS_HEX + '"></span>';
+    var bt2 = document.createElement("span"); bt2.className = "t"; bt2.textContent = "Terminal";
+    bn.appendChild(bt2);
+    brow.appendChild(bn);
+
+    if(pairs){
+      GENDERS.forEach(function(g){ brow.appendChild(totalCell(termTotal(g))); });
+      brow.appendChild(totalCell(Math.min(termTotal("m"), termTotal("f"))));
+    }else{
+      vis.forEach(function(loc, li){
+        if(state.mode === "use"){
+          var bsrc = state.locations[0], isBSrc = li === 0;
+          var bhere = function(){ return loc.term[state.view]; };
+          brow.appendChild(stepperCell({
+            label:"brass terminals in " + loc.name,
+            noPlus:isBSrc,
+            plusName:"Move one from " + bsrc.name,
+            minusName:isBSrc ? "Use one straight from" : "Mark one used from",
+            get:bhere,
+            canPlus:function(){ return !isBSrc && bsrc.term[state.view] > 0; },
+            plus:function(){
+              if(isBSrc) return;
+              bsrc.term[state.view] -= 1;
+              loc.term[state.view] += 1;
+            },
+            canMinus:function(){ return bhere() > 0; },
+            minus:function(){ loc.term[state.view] -= 1; }
+          }));
+        }else{
+          brow.appendChild(numberCell(loc.term[state.view], function(v){
+            loc.term[state.view] = v;
+            state.target = null; state.checked = {};
+            renderTotalsOnly(); save();
+          }, "Brass terminals in " + loc.name));
+        }
+      });
+      brow.appendChild(totalCell(termTotal(state.view)));
+    }
+    brass.appendChild(brow);
+
+    var hint = document.createElement("div");
+    hint.className = "brasshint"; hint.id = "brasshint";
+    brass.appendChild(hint);
+  }
+
+  if(pairs){
+    var note = document.createElement("div");
+    note.className = "readnote";
+    note.textContent = "Totals only. Switch to Male or Female to edit counts.";
+    grid.appendChild(note);
+  }else if(state.mode === "use"){
+    var un = document.createElement("div");
+    un.className = "readnote";
+    un.textContent = "\u2212 means used up and gone" +
+      (state.locations.length > 1
+        ? ", from a box or straight from " + state.locations[0].name + ". + in a box moves one out of " +
+          state.locations[0].name + ". New stock goes in through Inventory mode."
+        : ". New stock goes in through Inventory mode.");
+    grid.appendChild(un);
+  }
+
+  var hid = hiddenLocations();
+  if(hid.length){
+    var hn = document.createElement("div");
+    hn.className = "readnote";
+    hn.textContent = "Hidden: " + hid.map(function(l){ return l.name; }).join(", ") +
+      ". Left out of totals, sets and the order.";
+    grid.appendChild(hn);
+  }
+}
+
+/* обновляет всё, кроме структуры таблицы — чтобы не терять фокус в поле */
+function renderTotalsOnly(){
+  var rows = grid.querySelectorAll(".grow:not(.ghead)");
+  COLORS.forEach(function(c, i){
+    var row = rows[i];
+    if(!row) return;
+    var cell = row.lastElementChild;
+    var n = colorTotal(state.size, c.key, state.view);
+    cell.textContent = n;
+    cell.className = "sum-val" + (n ? "" : " zero");
+  });
+  if(needsBrass()){
+    var brow = brass.querySelectorAll(".grow:not(.ghead)")[0];
+    if(brow){
+      var bn = termTotal(state.view);
+      brow.lastElementChild.textContent = bn;
+      brow.lastElementChild.className = "sum-val" + (bn ? "" : " zero");
+    }
+  }
+  renderHero(); renderChart(); renderBrassHint(); renderBuy();
+}
+
+/* ---------- hero ---------- */
+var chart = document.getElementById("chart"),
+    setline = document.getElementById("setline"),
+    setlineLabel = document.getElementById("setlineLabel"),
+    legend = document.getElementById("legend");
+
+function renderChart(){
+  Array.prototype.slice.call(chart.querySelectorAll(".col")).forEach(function(n){ n.remove(); });
+  legend.innerHTML = "";
+  var vals = all(), max = Math.max.apply(null, vals), s = sets(), scale = max || 1;
+  COLORS.forEach(function(c, i){
+    var v = vals[i], col = document.createElement("div");
+    col.className = "col" + (v === 0 ? " empty" : "");
+    var core = Math.min(v, s), extra = v - core;
+    if(extra > 0){
+      var b1 = document.createElement("div");
+      b1.className = "bar surplus"; b1.style.background = c.hex;
+      b1.style.height = (extra / scale * 100) + "%";
+      if(c.key === "white") b1.style.boxShadow = "inset 0 0 0 1px rgba(0,0,0,.25)";
+      col.appendChild(b1);
+    }
+    var b2 = document.createElement("div");
+    b2.className = "bar" + (extra > 0 ? " core" : "");
+    b2.style.background = c.hex;
+    b2.style.height = (core / scale * 100) + "%";
+    if(c.key === "white") b2.style.boxShadow = "inset 0 0 0 1px rgba(0,0,0,.25)";
+    col.appendChild(b2);
+    chart.appendChild(col);
+    var lg = document.createElement("div"); lg.textContent = v; legend.appendChild(lg);
+  });
+  chart.appendChild(setline);
+  var h = chart.clientHeight - 14;
+  setline.style.bottom = (max ? (s / scale) * h : 0) + "px";
+  setline.style.display = max ? "block" : "none";
+  setlineLabel.textContent = s;
+}
+
+function renderHero(){
+  var s = sets(), vals = all(), max = Math.max.apply(null, vals);
+  document.getElementById("sets").textContent = s;
+  document.getElementById("setsWord").textContent = plural(s, "set", "sets") + " · " + unitLabel();
+  var lim = document.getElementById("limit");
+  if(max === 0){ lim.textContent = "Enter how many cams you have of each color."; return; }
+  var causes = [];
+  if(bootSets() === s) causes.push(COLORS.filter(function(c, i){ return vals[i] === s; })
+    .map(function(c){ return c.name.toLowerCase(); }).join(", "));
+  if(needsBrass() && termSets() === s) causes.push("brass terminals");
+  var surplus = vals.reduce(function(a, v){ return a + (v - s); }, 0);
+  lim.innerHTML = "Limited by <em>" + causes.join(" and ") + "</em>" +
+    (surplus ? " · " + surplus + " " + plural(surplus, "piece", "pieces") + " left over" : " · nothing left over");
+}
+
+function renderBrassHint(){
+  var el = document.getElementById("brasshint");
+  if(!el) return;
+  var k = termSets();
+  el.textContent = "Five per set. Current stock covers " + k + " " + plural(k, "set", "sets") + ".";
+}
+
+/* ---------- order list ---------- */
+var targetInput = document.getElementById("target"),
+    buylist = document.getElementById("buylist"),
+    buyhint = document.getElementById("buyhint"),
+    totalRow = document.getElementById("total"),
+    totalQty = document.getElementById("totalQty");
+
+function renderBuy(){
+  var vals = all(), s = sets(), max = Math.max.apply(null, vals);
+  var t = state.target === null ? max : state.target;
+  if(document.activeElement !== targetInput) targetInput.value = t;
+
+  buylist.innerHTML = "";
+  var items = [], sum = 0;
+  COLORS.forEach(function(c, i){
+    var itemName = c.name + (needsBrass() ? " boot" : "");
+    if(state.view === "p"){
+      GENDERS.forEach(function(g){
+        var have = colorTotal(state.size, c.key, g);
+        var need = Math.max(0, t - have);
+        if(need > 0){
+          items.push({label:itemName + " · " + (g === "m" ? "male" : "female"), qty:need, hex:c.hex, id:c.key + g});
+          sum += need;
+        }
+      });
+    }else{
+      var need = Math.max(0, t - vals[i]);
+      if(need > 0){ items.push({label:itemName, qty:need, hex:c.hex, id:c.key}); sum += need; }
+    }
+  });
+  if(needsBrass()){
+    var gs = state.view === "p" ? GENDERS : [state.view];
+    gs.forEach(function(g){
+      var need = Math.max(0, t * COLORS.length - termTotal(g));
+      if(need > 0){
+        items.push({
+          label:"Brass terminal" + (state.view === "p" ? " · " + (g === "m" ? "male" : "female") : ""),
+          qty:need, hex:BRASS_HEX, id:"brass" + g
+        });
+        sum += need;
+      }
+    });
+  }
+
+  document.getElementById("pdf").disabled = !sectionsForOrder().length;
+
+  if(!max){
+    buyhint.textContent = "The list appears once you enter your counts.";
+  }else if(t <= s){
+    buyhint.textContent = "You already have everything for " + t + " " + plural(t, "set", "sets") + ". Raise the number to plan an order.";
+  }else{
+    buyhint.textContent = "To build " + t + " " + plural(t, "set", "sets") + " — you have " + s + " now. That adds " + (t - s) + ".";
+  }
+
+  if(!items.length){
+    if(max){
+      var p = document.createElement("li");
+      p.innerHTML = '<span class="empty-note">Nothing to order.</span>';
+      buylist.appendChild(p);
+    }
+    totalRow.hidden = true;
+    return;
+  }
+
+  items.forEach(function(it){
+    var li = document.createElement("li");
+    if(state.checked[it.id]) li.className = "done";
+    var lab = document.createElement("label");
+    var cb = document.createElement("input");
+    cb.type = "checkbox"; cb.checked = !!state.checked[it.id];
+    cb.addEventListener("change", function(){
+      state.checked[it.id] = cb.checked;
+      li.className = cb.checked ? "done" : "";
+    });
+    var chip = document.createElement("span");
+    chip.className = "chip"; chip.style.background = it.hex;
+    var txt = document.createElement("span"); txt.textContent = it.label;
+    var qty = document.createElement("span"); qty.className = "qty"; qty.textContent = "+" + it.qty;
+    lab.appendChild(cb); lab.appendChild(chip); lab.appendChild(txt); lab.appendChild(qty);
+    li.appendChild(lab);
+    buylist.appendChild(li);
+  });
+  totalQty.textContent = sum + " pcs";
+  totalRow.hidden = false;
+}
+
+function renderAll(){ syncControls(); renderVisRow(); renderGrid(); renderHero(); renderChart(); renderBrassHint(); renderBuy(); }
+
+/* ---------- controls ---------- */
+var tabs = {m:document.getElementById("tab-m"), f:document.getElementById("tab-f"), p:document.getElementById("tab-p")};
+var sizeBtns = {s:document.getElementById("size-s"), l:document.getElementById("size-l")};
+var modeToggle = document.getElementById("modetoggle");
+function syncControls(){
+  Object.keys(tabs).forEach(function(k){ tabs[k].setAttribute("aria-selected", state.view === k ? "true" : "false"); });
+  Object.keys(sizeBtns).forEach(function(k){ sizeBtns[k].setAttribute("aria-pressed", state.size === k ? "true" : "false"); });
+  modeToggle.setAttribute("aria-checked", state.mode === "inv" ? "true" : "false");
+  document.getElementById("addloc").hidden = state.mode === "use";
+  document.getElementById("loclabel").textContent = state.mode === "use"
+    ? "Moving and using cams"
+    : "Counts by storage location";
+  document.getElementById("clear").hidden = state.mode === "use";
+  document.getElementById("buypanel").hidden = state.mode === "use";
+}
+modeToggle.addEventListener("click", function(){
+  state.mode = state.mode === "inv" ? "use" : "inv";
+  armed = null;
+  renderAll(); save();
+});
+Object.keys(tabs).forEach(function(k){
+  tabs[k].addEventListener("click", function(){
+    state.view = k; state.target = null; state.checked = {}; armed = null;
+    renderAll(); save();
+  });
+});
+Object.keys(sizeBtns).forEach(function(k){
+  sizeBtns[k].addEventListener("click", function(){
+    state.size = k; state.target = null; state.checked = {}; armed = null;
+    renderAll(); save();
+  });
+});
+document.getElementById("addloc").addEventListener("click", function(){
+  state.locations.push(blankLocation("Location " + (state.locations.length + 1)));
+  armed = null;
+  if(state.view === "p") state.view = "m";
+  renderAll(); save();
+  var cells = grid.querySelectorAll(".loccell input");
+  var last = cells[cells.length - 1];
+  if(last){ last.focus(); last.select(); }
+});
+targetInput.addEventListener("input", function(){
+  state.target = targetInput.value === "" ? null : Math.max(0, Math.floor(+targetInput.value || 0));
+  state.checked = {};
+  renderBuy(); save();
+});
+document.getElementById("reset").addEventListener("click", function(){
+  state.target = null; state.checked = {}; renderBuy(); save();
+});
+document.getElementById("clear").addEventListener("click", function(){
+  visibleLocations().forEach(function(loc){
+    COLORS.forEach(function(c){ loc[state.size][c.key] = {m:0, f:0}; });
+    if(needsBrass()) loc.term = {m:0, f:0};
+  });
+  state.target = null; state.checked = {};
+  renderAll(); save();
+});
+window.addEventListener("resize", renderChart);
+
+/* ---------- order report ---------- */
+var orderFor = document.getElementById("orderfor");
+orderFor.addEventListener("input", save);
+function esc(s){ return String(s).replace(/[&<>]/g, function(m){ return {"&":"&amp;","<":"&lt;",">":"&gt;"}[m]; }); }
+
+function sectionsForOrder(){
+  var out = [];
+  [["s","Small"], ["l","Large"]].forEach(function(sz){
+    [["m","male"], ["f","female"]].forEach(function(g){
+      var vals = COLORS.map(function(c){ return colorTotal(sz[0], c.key, g[0]); });
+      var max = Math.max.apply(null, vals);
+      if(max === 0) return;
+      var t = max;
+      if(sz[0] === state.size && state.target !== null && (state.view === g[0] || state.view === "p")) t = state.target;
+      var items = [], sum = 0;
+      COLORS.forEach(function(c, i){
+        var need = Math.max(0, t - vals[i]);
+        if(need > 0){
+          items.push({en:c.name, qty:need,
+            hex:c.key === "white" ? "#111" : c.hex,
+            sym:c.key === "white" ? "\u25CB" : "\u25CF"});
+          sum += need;
+        }
+      });
+      if(sz[0] === "l"){
+        var nb = Math.max(0, t * COLORS.length - termTotal(g[0]));
+        if(nb > 0){ items.push({en:"Brass terminal", qty:nb, hex:"#8a6d34", sym:"\u25CF"}); sum += nb; }
+      }
+      if(!items.length) return;
+      out.push({title:sz[1] + " " + g[1], items:items, sum:sum, target:t});
+    });
+  });
+  return out;
+}
+
+function buildReport(){
+  var secs = sectionsForOrder(), rep = document.getElementById("report");
+  var date = new Date().toLocaleDateString("en-US", {month:"long", day:"numeric", year:"numeric"});
+  var h = "<h2>Cams order</h2><p class='meta'>";
+  if(orderFor.value.trim()) h += "For: " + esc(orderFor.value.trim()) + "<br>";
+  var hid = hiddenLocations();
+  if(hid.length) h += "Not counted: " + esc(hid.map(function(l){ return l.name; }).join(", ")) + "<br>";
+  h += "Date: " + date + "</p>";
+  var grand = 0;
+  secs.forEach(function(s){
+    grand += s.sum;
+    h += "<table><thead><tr><th>" + s.title + "</th><th class='n'>Quantity</th></tr></thead><tbody>";
+    s.items.forEach(function(it){
+      h += "<tr><td style='color:" + it.hex + "'><span class='sw'>" + it.sym + "</span>" +
+           esc(it.en) + "</td><td class='n'>" + it.qty + " pcs</td></tr>";
+    });
+    h += "<tr class='sum'><td>Subtotal</td><td class='n'>" + s.sum + " pcs</td></tr></tbody></table>";
+    h += "<p class='cap'>Completes " + s.target + " sets of five colors.</p>";
+  });
+  if(secs.length > 1) h += "<p class='grand'>Order total: " + grand + " pcs</p>";
+  rep.innerHTML = h;
+}
+
+document.getElementById("pdf").addEventListener("click", function(){
+  if(!sectionsForOrder().length) return;
+  buildReport();
+  window.print();
+});
+
+renderAll();
+load();
+})();
+</script>
+<script>
+if("serviceWorker" in navigator && location.protocol === "https:"){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
