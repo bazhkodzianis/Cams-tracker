@@ -247,8 +247,8 @@ footer button{appearance:none;background:transparent;border:0;font:inherit;font-
   #report th{border-bottom:2px solid #000;font-weight:600}
   #report td.n,#report th.n{text-align:right;font-variant-numeric:tabular-nums}
   #report tr.sum td{border-bottom:0;border-top:2px solid #000;font-weight:700}
-  #report .sw{font-size:13pt;margin-right:7px;line-height:1}
-  #report .sw[style]{-webkit-text-stroke:.3pt #555}
+  #report .sw{display:inline-block;width:9pt;height:9pt;border-radius:50%;
+    margin-right:7px;vertical-align:-.5pt;border:.4pt solid #555}
   #report .cap{font-size:9.5pt;color:#444;margin:5px 0 26px}
   #report .grand{font-size:12pt;font-weight:700;margin:6px 0 0;padding-top:9px;border-top:3px double #000}
   #report,#report *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -1398,15 +1398,13 @@ function sectionsForOrder(){
       COLORS.forEach(function(c, i){
         var need = Math.max(0, t - vals[i]);
         if(need > 0){
-          items.push({en:c.name, qty:need,
-            hex:c.key === "white" ? "#111" : c.hex,
-            sym:c.key === "white" ? "\u25CB" : "\u25CF"});
+          items.push({en:c.name, qty:need, hex:c.hex});
           sum += need;
         }
       });
       if(sz[0] === "l"){
         var nb = Math.max(0, t * COLORS.length - termTotal(g[0]));
-        if(nb > 0){ items.push({en:"Brass terminal", qty:nb, hex:"#8a6d34", sym:"\u25CF"}); sum += nb; }
+        if(nb > 0){ items.push({en:"Brass terminal", qty:nb, hex:"#8a6d34"}); sum += nb; }
       }
       if(!items.length) return;
       out.push({title:sz[1] + " " + g[1], items:items, sum:sum, target:t});
@@ -1426,7 +1424,7 @@ function buildReport(){
     grand += s.sum;
     h += "<table><thead><tr><th>" + s.title + "</th><th class='n'>Quantity</th></tr></thead><tbody>";
     s.items.forEach(function(it){
-      h += "<tr><td><span class='sw' style='color:" + it.hex + "'>" + it.sym + "</span>" +
+      h += "<tr><td><span class='sw' style='background:" + it.hex + "'></span>" +
            esc(it.en) + "</td><td class='n'>" + it.qty + " pcs</td></tr>";
     });
     h += "<tr class='sum'><td>Subtotal</td><td class='n'>" + s.sum + " pcs</td></tr></tbody></table>";
