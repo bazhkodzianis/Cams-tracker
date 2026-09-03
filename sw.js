@@ -1,4 +1,4 @@
-var CACHE = "cam-sets-20260903-0000";
+var CACHE = "cam-sets-20260903-0242";
 var SHELL = [
   "./", "./index.html", "./manifest.webmanifest",
   "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"
@@ -18,6 +18,7 @@ self.addEventListener("activate", function(e){
 
 self.addEventListener("fetch", function(e){
   if(e.request.method !== "GET") return;
+  if(new URL(e.request.url).origin !== self.location.origin) return;   /* GitHub API мимо кэша */
   e.respondWith(
     caches.match(e.request).then(function(hit){
       if(hit) return hit;
