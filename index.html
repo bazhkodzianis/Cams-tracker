@@ -203,7 +203,10 @@ input[type=number]:focus{outline:2px solid var(--brass);outline-offset:-1px;bord
 
 .buy{background:var(--card);border:1px solid var(--rule);border-radius:var(--radius);padding:14px 12px}
 .buy h2{font-size:15px;font-weight:650;margin:0 0 3px}
-.buyhint{font-size:13.5px;color:var(--ink-soft);margin:0 0 12px}
+.buyhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.buyhead h2{margin:0}
+.excnote{font-size:12.5px;color:var(--soft-red);margin:6px 0 10px}
+.buyhint{font-size:13.5px;color:var(--ink-soft);margin:10px 0 12px}
 .target{display:flex;align-items:center;gap:9px;margin-bottom:12px;flex-wrap:wrap}
 .target label{font-size:14px}
 .target input{width:84px}
@@ -300,8 +303,14 @@ footer button{appearance:none;background:transparent;border:0;font:inherit;font-
 <div class="gridwrap" id="brasswrap" hidden><div class="grid" id="brass"></div></div>
 
 <section class="buy" id="buypanel">
-  <h2>What to order</h2>
+  <div class="buyhead">
+    <h2>What to order</h2>
+    <button type="button" class="modetoggle" id="includechk" role="switch" aria-checked="true">
+      Include to order<span class="track"><span class="knob"></span></span>
+    </button>
+  </div>
   <p class="buyhint" id="buyhint"></p>
+  <p class="excnote" id="excnote" hidden>Left out of the order and the PDF.</p>
   <div class="target">
     <label for="target">Build sets:</label>
     <input type="number" id="target" min="0" step="1" inputmode="numeric">
@@ -374,8 +383,17 @@ function blankLocation(name){
   return loc;
 }
 
+function normInclude(v){
+  var out = {s:{m:true, f:true}, l:{m:true, f:true}};
+  if(!v) return out;
+  ["s","l"].forEach(function(sz){
+    var src = v[sz] || {};
+    ["m","f"].forEach(function(g){ if(src[g] === false) out[sz][g] = false; });
+  });
+  return out;
+}
 var state = {
-  mode:"use", size:"s", view:"m", target:null, checked:{},
+  mode:"use", size:"s", view:"m", target:null, checked:{}, include:normInclude(null),
   locations:[blankLocation("Office"), blankLocation("Repair box")]
 };
 
@@ -418,6 +436,7 @@ var KEY = "cam-sets-v4";
 function snapshot(){
   return JSON.stringify({
     v:5, mode:state.mode, locations:state.locations, size:state.size, view:state.view, target:state.target,
+    include:state.include,
     orderFor:(document.getElementById("orderfor") || {}).value || ""
   });
 }
@@ -501,6 +520,7 @@ function apply(raw){
   if(d.mode) state.mode = d.mode;
   if(d.size) state.size = d.size;
   if(d.view) state.view = d.view;
+  state.include = normInclude(d.include);
   if(typeof d.target === "number") state.target = d.target;
   if(d.orderFor) document.getElementById("orderfor").value = d.orderFor;
   renderAll();
@@ -1241,6 +1261,16 @@ function renderBuy(){
     });
   }
 
+  var chk = document.getElementById("includechk"),
+      excnote = document.getElementById("excnote"),
+      pairsView = state.view === "p",
+      on = pairsView ? true : state.include[state.size][state.view];
+  chk.hidden = pairsView;
+  chk.setAttribute("aria-checked", on ? "true" : "false");
+  chk.setAttribute("aria-label", "Include " + (state.size === "l" ? "Large" : "Small") + " " +
+    (state.view === "f" ? "female" : "male") + " in the order");
+  excnote.hidden = pairsView || on;
+
   document.getElementById("pdf").disabled = !sectionsForOrder().length;
 
   if(!max){
@@ -1364,6 +1394,7 @@ function sectionsForOrder(){
   var out = [];
   [["s","Small"], ["l","Large"]].forEach(function(sz){
     [["m","male"], ["f","female"]].forEach(function(g){
+      if(!state.include[sz[0]][g[0]]) return;      /* вид исключён из заказа */
       var vals = COLORS.map(function(c){ return colorTotal(sz[0], c.key, g[0]); });
       var max = Math.max.apply(null, vals);
       if(max === 0) return;
@@ -1410,6 +1441,12 @@ function buildReport(){
   if(secs.length > 1) h += "<p class='grand'>Order total: " + grand + " pcs</p>";
   rep.innerHTML = h;
 }
+
+document.getElementById("includechk").addEventListener("click", function(){
+  if(state.view === "p") return;
+  state.include[state.size][state.view] = this.getAttribute("aria-checked") !== "true";
+  renderBuy(); save();
+});
 
 document.getElementById("pdf").addEventListener("click", function(){
   if(!sectionsForOrder().length) return;
