@@ -36,6 +36,7 @@ h1{font-size:19px;font-weight:650;letter-spacing:-.01em;margin:0 0 2px}
 .sizes button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 .topbar{display:flex;align-items:center;gap:12px;margin-bottom:2px}
 .topbar h1{flex:1;min-width:0}
+[hidden]{display:none !important}
 .settingsbar{display:flex;justify-content:flex-end;margin:2px 0 12px}
 .modetoggle{display:flex;align-items:center;gap:8px;flex:0 0 auto;appearance:none;background:transparent;
   border:0;padding:4px 0;font:inherit;font-size:12.5px;color:var(--ink-soft);cursor:pointer;white-space:nowrap}
@@ -259,7 +260,7 @@ footer button{appearance:none;background:transparent;border:0;font:inherit;font-
 
 <footer><button type="button" id="clear">Clear counts for this size</button></footer>
 
-<div class="settingsbar">
+<div class="settingsbar" id="settingsbar" hidden>
   <button type="button" class="modetoggle" id="settingstoggle" role="switch" aria-checked="false" hidden>
     Settings<span class="track"><span class="knob"></span></span>
   </button>
@@ -1065,6 +1066,7 @@ function syncControls(){
   document.getElementById("clear").hidden = state.mode === "use";
   document.getElementById("buypanel").hidden = state.mode === "use";
   setToggle.hidden = state.mode === "use";
+  document.getElementById("settingsbar").hidden = state.mode === "use";
   setToggle.setAttribute("aria-checked", showSettings ? "true" : "false");
   document.getElementById("syncpanel").hidden = !(state.mode === "inv" && showSettings);
 }
