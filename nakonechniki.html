@@ -92,6 +92,11 @@ h1{font-size:19px;font-weight:650;letter-spacing:-.01em;margin:0 0 2px}
 .legend div{flex:1;text-align:center;font-size:11.5px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 .loctools{display:flex;align-items:center;gap:10px;margin:0 0 7px}
+.undo{appearance:none;align-self:flex-start;margin:-2px 0 3px -2px;padding:0 2px;background:none;border:0;
+  font:inherit;font-size:22px;line-height:1;color:var(--ink);cursor:pointer}
+.undo:active{opacity:.6}
+.undo:disabled{color:var(--rule);cursor:default}
+.undo:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
 .loctools span{font-size:13.5px;color:var(--ink-soft)}
 .loctools button{margin-left:auto;appearance:none;background:var(--card);border:1px solid var(--rule);border-radius:var(--radius);
   padding:7px 12px;font:inherit;font-size:13.5px;color:var(--ink);cursor:pointer}
@@ -103,7 +108,8 @@ h1{font-size:19px;font-weight:650;letter-spacing:-.01em;margin:0 0 2px}
 .grow{display:grid;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--rule-soft)}
 .grow:last-child{border-bottom:0}
 .ghead{background:var(--head);padding-top:6px;padding-bottom:6px;font-size:12.5px;color:var(--ink-soft);align-items:end}
-.headlabel{font-size:12.5px;color:var(--ink-soft);padding-bottom:8px}
+.headlabel{display:flex;flex-direction:column;align-items:flex-start;
+  font-size:12.5px;color:var(--ink-soft);padding-bottom:8px}
 .loccell{display:flex;flex-direction:column;gap:3px}
 .loccell input{width:100%;font:inherit;font-size:12.5px;text-align:center;padding:5px 2px;border:1px solid transparent;
   border-radius:var(--radius);background:transparent;color:var(--ink-soft);min-width:0}
@@ -391,11 +397,49 @@ function snapshot(){
     orderFor:(document.getElementById("orderfor") || {}).value || ""
   });
 }
-function save(){
-  var data = snapshot();
-  try{ if(typeof autoPush === "function") autoPush(); }catch(e){}
+/* ---------- undo ---------- */
+var undoStack = [], lastData = null;
+function dataPart(raw){
+  var d = JSON.parse(raw);
+  delete d.mode; delete d.size; delete d.view;   /* переключение вида шагом не считается */
+  return JSON.stringify(d);
+}
+function writeStore(data){
   try{ if(window.storage && window.storage.set){ window.storage.set(KEY, data); return; } }catch(e){}
   try{ localStorage.setItem(KEY, data); }catch(e){}
+}
+function markUndoPoint(raw){
+  var cur = dataPart(raw);
+  if(lastData !== null && lastData !== cur){
+    undoStack.push(lastData);
+    if(undoStack.length > 50) undoStack.shift();
+  }
+  lastData = cur;
+  refreshUndo();
+}
+function refreshUndo(){
+  var b = document.getElementById("undo");
+  if(b) b.disabled = undoStack.length === 0;
+}
+function undo(){
+  if(!undoStack.length) return;
+  var prev = undoStack.pop();
+  var m = state.mode, sz = state.size, vw = state.view;
+  apply(prev);
+  state.mode = m; state.size = sz; state.view = vw;   /* вид остаётся тот, что на экране */
+  lastData = dataPart(snapshot());
+  writeStore(snapshot());
+  armed = null;
+  renderAll();
+  refreshUndo();
+  try{ if(typeof autoPush === "function") autoPush(); }catch(e){}
+}
+
+function save(){
+  var data = snapshot();
+  markUndoPoint(data);
+  try{ if(typeof autoPush === "function") autoPush(); }catch(e){}
+  writeStore(data);
 }
 function apply(raw){
   var d;
@@ -732,12 +776,25 @@ function totalCell(n){
   d.textContent = n;
   return d;
 }
-function headRow(label, cols){
+function headRow(label, cols, withUndo){
   var row = document.createElement("div");
   row.className = "grow ghead";
   row.style.gridTemplateColumns = cols;
   var l = document.createElement("div");
-  l.className = "headlabel"; l.textContent = label;
+  l.className = "headlabel";
+  if(withUndo){
+    var u = document.createElement("button");
+    u.type = "button"; u.className = "undo"; u.id = "undo";
+    u.textContent = "\u21b6";
+    u.title = "Undo last change";
+    u.setAttribute("aria-label", "Undo last change");
+    u.disabled = undoStack.length === 0;
+    u.addEventListener("click", undo);
+    l.appendChild(u);
+  }
+  var t = document.createElement("span");
+  t.textContent = label;
+  l.appendChild(t);
   row.appendChild(l);
   return row;
 }
@@ -801,7 +858,7 @@ function renderGrid(){
   grid.innerHTML = "";
   grid.style.minWidth = minRowWidth(pairs ? 2 : vis.length) + "px";
 
-  var head = headRow(needsBrass() ? "Colored boot" : "Color", cols);
+  var head = headRow(needsBrass() ? "Colored boot" : "Color", cols, true);
   if(pairs){
     ["Male total", "Female total"].forEach(function(t){
       var d = document.createElement("div"); d.className = "totcell"; d.textContent = t; head.appendChild(d);
@@ -1266,6 +1323,9 @@ renderAll();
 initSync();
 initTheme();
 load();
+lastData = dataPart(snapshot());   /* стартовая точка: отменять пока нечего */
+undoStack.length = 0;
+refreshUndo();
 })();
 </script>
 </body>
