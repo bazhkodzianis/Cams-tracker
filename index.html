@@ -68,6 +68,11 @@ h1{font-size:19px;font-weight:650;letter-spacing:-.01em;margin:0 0 2px}
 .topbar h1{flex:1;min-width:0}
 [hidden]{display:none !important}
 .settingsbar{display:flex;justify-content:flex-end;margin:2px 0 12px}
+.toprow{display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex:0 0 auto}
+.modetoggle.small{font-size:12px}
+.modetoggle.small .track{width:32px;height:18px;border-radius:9px}
+.modetoggle.small .knob{width:14px;height:14px}
+.modetoggle.small[aria-checked="true"] .knob{transform:translateX(14px)}
 .modetoggle{display:flex;align-items:center;gap:8px;flex:0 0 auto;appearance:none;background:transparent;
   border:0;padding:4px 0;font:inherit;font-size:12.5px;color:var(--ink-soft);cursor:pointer;white-space:nowrap}
 .modetoggle .track{width:38px;height:22px;flex:0 0 auto;border-radius:11px;background:var(--rule);
@@ -205,6 +210,20 @@ input[type=number]:focus{outline:2px solid var(--brass);outline-offset:-1px;bord
 
 .buy{background:var(--card);border:1px solid var(--rule);border-radius:var(--radius);padding:14px 12px}
 .buy h2{font-size:15px;font-weight:650;margin:0 0 3px}
+.delivlist{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.delivrow{display:flex;align-items:center;gap:10px}
+.delivrow .dot{width:15px;height:15px;border-radius:50%;flex:0 0 auto;border:1px solid var(--rule)}
+.delivrow .nm{flex:1;min-width:0;font-size:14px}
+.delivrow input{width:58px;flex:0 0 auto;font:inherit;font-size:15px;text-align:center;padding:7px 4px;
+  border:1px solid var(--rule);border-radius:var(--radius);background:var(--field);color:var(--ink)}
+.delivrow .prev{flex:0 0 auto;width:74px;text-align:right;font-size:12.5px;color:var(--ink-soft);
+  font-variant-numeric:tabular-nums}
+.delivrow .prev b{color:var(--ink);font-weight:650}
+.delivfoot{display:flex;gap:8px;flex-wrap:wrap}
+.delivfoot button{font:inherit;font-size:13.5px;padding:9px 14px;border-radius:var(--radius);
+  border:1px solid var(--rule);background:var(--card);color:var(--ink);cursor:pointer}
+.delivfoot #delivadd{background:var(--ink);color:var(--paper);border-color:var(--ink);font-weight:600}
+.delivfoot #delivadd:disabled{opacity:.45;cursor:default}
 .buyhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .buyhead h2{margin:0}
 .excnote{font-size:12.5px;color:var(--soft-red);margin:6px 0 10px}
@@ -268,9 +287,14 @@ footer button{appearance:none;background:transparent;border:0;font:inherit;font-
 
 <header class="topbar">
   <h1>Cam sets</h1>
-  <button type="button" class="modetoggle" id="modetoggle" role="switch" aria-checked="false">
-    Inventory mode<span class="track"><span class="knob"></span></span>
-  </button>
+  <div class="toprow">
+    <button type="button" class="modetoggle" id="modetoggle" role="switch" aria-checked="false">
+      Inventory mode<span class="track"><span class="knob"></span></span>
+    </button>
+    <button type="button" class="modetoggle small" id="awake" role="switch" aria-checked="false" hidden>
+      Keep the screen on<span class="track"><span class="knob"></span></span>
+    </button>
+  </div>
 </header>
 <p class="sub">A set is one cam of each of the five colors. Sizes count separately. Small cams come assembled; large ones use a separate boot and brass terminal.</p>
 
@@ -303,6 +327,23 @@ footer button{appearance:none;background:transparent;border:0;font:inherit;font-
 
 <div class="gridwrap"><div class="grid" id="grid"></div></div>
 <div class="gridwrap" id="brasswrap" hidden><div class="grid" id="brass"></div></div>
+
+<section class="buy" id="delivpanel" hidden>
+  <div class="buyhead">
+    <h2>Delivery</h2>
+    <button type="button" class="modetoggle" id="delivtog" role="switch" aria-checked="false">
+      Delivery mode<span class="track"><span class="knob"></span></span>
+    </button>
+  </div>
+  <p class="buyhint" id="delivhint">Type what arrived. It is added to the stock.</p>
+  <div id="delivbody" hidden>
+    <div class="delivlist" id="delivlist"></div>
+    <div class="delivfoot">
+      <button type="button" id="delivadd" disabled>Add to stock</button>
+      <button type="button" id="delivclear">Clear</button>
+    </div>
+  </div>
+</section>
 
 <section class="buy" id="buypanel">
   <div class="buyhead">
@@ -555,6 +596,43 @@ function initTheme(){
     if(b) b.addEventListener("click", function(){ syncCfgSave({theme: t}); applyTheme(); });
   });
   applyTheme();
+}
+
+/* ---------- keep the screen awake ---------- */
+var wakeLock = null, awakeBox = null;
+
+function awakeWanted(){ return syncCfg().awake === true; }
+
+function requestWake(){
+  if(!("wakeLock" in navigator) || !awakeWanted() || document.visibilityState !== "visible") return;
+  navigator.wakeLock.request("screen").then(function(lock){
+    wakeLock = lock;
+    lock.addEventListener("release", function(){ wakeLock = null; });
+  }).catch(function(){ wakeLock = null; });
+}
+function releaseWake(){
+  if(wakeLock){ try{ wakeLock.release(); }catch(e){} wakeLock = null; }
+}
+function renderAwake(){
+  if(!awakeBox) return;
+  var on = awakeWanted();
+  awakeBox.hidden = !("wakeLock" in navigator) || state.mode !== "inv";
+  awakeBox.setAttribute("aria-checked", on ? "true" : "false");
+}
+function initAwake(){
+  awakeBox = document.getElementById("awake");
+  if(!("wakeLock" in navigator)) return;              /* браузер не умеет */
+  awakeBox.addEventListener("click", function(){
+    var on = !awakeWanted();
+    syncCfgSave({awake: on});
+    renderAwake();
+    if(on) requestWake(); else releaseWake();
+  });
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState === "visible") requestWake(); else releaseWake();
+  });
+  renderAwake();
+  requestWake();
 }
 
 /* ---------- sync through a private GitHub gist ---------- */
@@ -1315,7 +1393,97 @@ function renderBuy(){
   totalRow.hidden = false;
 }
 
-function renderAll(){ syncControls(); renderVisRow(); renderGrid(); renderHero(); renderChart(); renderBrassHint(); renderBuy(); }
+/* ---------- delivery: что пришло, прибавляем к складу ---------- */
+var delivOn = false, deliv = {}, delivCtx = "";
+
+function delivKeys(){
+  var keys = COLORS.map(function(c){ return c.key; });
+  if(needsBrass()) keys.push("term");
+  return keys;
+}
+function delivStock(key){
+  var off = state.locations[0];
+  return key === "term" ? off.term[state.view] : off[state.size][key][state.view];
+}
+function delivTotal(){
+  return delivKeys().reduce(function(a, k){ return a + (deliv[k] || 0); }, 0);
+}
+function renderDeliv(){
+  var panel = document.getElementById("delivpanel");
+  panel.hidden = state.mode !== "inv" || state.view === "p";
+  if(panel.hidden) return;
+
+  var ctx = state.size + state.view;
+  if(ctx !== delivCtx){ deliv = {}; delivCtx = ctx; }   /* сменил вкладку — числа не переносим */
+
+  var tog = document.getElementById("delivtog");
+  tog.setAttribute("aria-checked", delivOn ? "true" : "false");
+  document.getElementById("delivbody").hidden = !delivOn;
+  document.getElementById("delivhint").textContent = delivOn
+    ? "Type what arrived. It is added to " + state.locations[0].name + "."
+    : "Turn it on to log what arrived.";
+  if(!delivOn) return;
+
+  var list = document.getElementById("delivlist");
+  list.innerHTML = "";
+  delivKeys().forEach(function(key){
+    var c = COLORS.filter(function(x){ return x.key === key; })[0];
+    var row = document.createElement("div");
+    row.className = "delivrow";
+
+    var dot = document.createElement("span");
+    dot.className = "dot";
+    dot.style.background = c ? c.hex : BRASS_HEX;
+    row.appendChild(dot);
+
+    var nm = document.createElement("span");
+    nm.className = "nm";
+    nm.textContent = c ? c.name : "Brass terminal";
+    row.appendChild(nm);
+
+    var inp = document.createElement("input");
+    inp.type = "number"; inp.min = "0"; inp.step = "1"; inp.inputMode = "numeric";
+    inp.placeholder = "0";
+    inp.value = deliv[key] ? deliv[key] : "";
+    inp.setAttribute("aria-label", "Arrived: " + (c ? c.name : "brass terminals"));
+    inp.addEventListener("focus", function(){ inp.select(); });
+    inp.addEventListener("input", function(){
+      var n = Math.max(0, Math.floor(+inp.value || 0));
+      deliv[key] = n;
+      prev.innerHTML = previewHtml(key);
+      document.getElementById("delivadd").disabled = delivTotal() === 0;
+    });
+    row.appendChild(inp);
+
+    var prev = document.createElement("span");
+    prev.className = "prev";
+    prev.innerHTML = previewHtml(key);
+    row.appendChild(prev);
+
+    list.appendChild(row);
+  });
+  document.getElementById("delivadd").disabled = delivTotal() === 0;
+
+  function previewHtml(key){
+    var have = delivStock(key), n = deliv[key] || 0;
+    return n ? have + " \u2192 <b>" + (have + n) + "</b>" : String(have);
+  }
+}
+function applyDelivery(){
+  if(delivTotal() === 0) return;
+  var off = state.locations[0];
+  delivKeys().forEach(function(key){
+    var n = deliv[key] || 0;
+    if(!n) return;
+    if(key === "term") off.term[state.view] += n;
+    else off[state.size][key][state.view] += n;
+  });
+  deliv = {};
+  state.target = null; state.checked = {};
+  save(); renderAll();
+}
+
+function renderAll(){ renderAwake(); syncControls(); renderVisRow(); renderGrid(); renderHero(); renderChart(); renderBrassHint(); renderDeliv(); renderBuy(); }
 
 /* ---------- controls ---------- */
 var tabs = {m:document.getElementById("tab-m"), f:document.getElementById("tab-f"), p:document.getElementById("tab-p")};
@@ -1442,6 +1610,16 @@ function buildReport(){
   rep.innerHTML = h;
 }
 
+document.getElementById("delivtog").addEventListener("click", function(){
+  delivOn = !delivOn;
+  if(!delivOn) deliv = {};
+  renderDeliv();
+});
+document.getElementById("delivadd").addEventListener("click", applyDelivery);
+document.getElementById("delivclear").addEventListener("click", function(){
+  deliv = {}; renderDeliv();
+});
+
 document.getElementById("includechk").addEventListener("click", function(){
   if(state.view === "p") return;
   state.include[state.size][state.view] = this.getAttribute("aria-checked") !== "true";
@@ -1457,6 +1635,7 @@ document.getElementById("pdf").addEventListener("click", function(){
 renderAll();
 initSync();
 initTheme();
+initAwake();
 load();
 lastData = dataPart(snapshot());   /* стартовая точка: отменять пока нечего */
 undoStack.length = 0;

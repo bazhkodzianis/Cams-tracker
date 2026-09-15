@@ -1,4 +1,4 @@
-var CACHE = "cam-sets-20260903-2223";
+var CACHE = "cam-sets-20260915-2142";
 var SHELL = [
   "./", "./index.html", "./manifest.webmanifest",
   "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"
